@@ -2,5 +2,5 @@
 export const environment = {
   production: true,
   // This matches the API service name in ../render.yaml.
-  apiBaseUrl: 'https://document-rag-api.onrender.com',
+  apiBaseUrl: 'https://document-rag-api-cuch.onrender.com',
 } as const;
