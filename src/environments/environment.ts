@@ -1,5 +1,5 @@
 /** Runtime configuration (development). */
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://rag-platform-production-71d3.up.railway.app',
+  apiBaseUrl: 'http://localhost:8000',
 } as const;

@@ -1,5 +1,6 @@
-/** Runtime configuration (production). */
+/** Runtime configuration (production on Render). */
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://rag-platform-production-71d3.up.railway.app',
+  // This matches the API service name in ../render.yaml.
+  apiBaseUrl: 'https://document-rag-api.onrender.com',
 } as const;

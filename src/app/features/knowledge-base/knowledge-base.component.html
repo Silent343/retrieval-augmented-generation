@@ -1,104 +1,61 @@
-<!--
-  Knowledge-base screen.
-  Left: the document shelf (upload + list).
-  Right: the conversation, where answers show their cited sources.
--->
 <div class="kb-shell">
-
-  <!-- ── Left: document shelf ─────────────────────────────────────────── -->
   <aside class="shelf">
     <header class="shelf-head">
       <h1 class="shelf-title">Ask your documents</h1>
-      <p class="shelf-sub">
-        Upload files, then ask questions. Every answer shows where it came from.
-      </p>
+      <p class="shelf-sub">Upload files, then ask questions. Every answer shows where it came from.</p>
     </header>
 
     <label class="upload" [class.is-busy]="store.uploading()">
-      <input
-        type="file"
-        accept=".pdf,.txt,.md"
-        (change)="onFileSelected($event)"
-        [disabled]="store.uploading()" />
+      <input type="file" accept=".pdf,.txt,.md" (change)="onFileSelected($event)" [disabled]="store.uploading()" />
       @if (store.uploading()) {
         <span class="upload-label">Ingesting…</span>
       } @else {
         <span class="upload-icon">+</span>
         <span class="upload-label">Add a document</span>
-        <span class="upload-hint">PDF, TXT or MD</span>
+        <span class="upload-hint">PDF, TXT or MD · max. 10 MB</span>
       }
     </label>
 
     <div class="shelf-meta">
-      <span>{{ store.documents().length }} documents</span>
-      <span>·</span>
-      <span>{{ store.totalChunks() }} chunks indexed</span>
+      <span>{{ store.documents().length }} documents</span><span>·</span><span>{{ store.totalChunks() }} chunks indexed</span>
     </div>
 
     <ul class="doc-list">
       @for (doc of store.documents(); track doc.document_id) {
         <li class="doc">
-          <div class="doc-info">
-            <span class="doc-name">{{ doc.filename }}</span>
-            <span class="doc-chunks">{{ doc.chunks }} chunks</span>
-          </div>
-          <button
-            class="doc-remove"
-            title="Remove document"
-            (click)="onDelete(doc.document_id)">×</button>
+          <div class="doc-info"><span class="doc-name">{{ doc.filename }}</span><span class="doc-chunks">{{ doc.chunks }} chunks</span></div>
+          <button class="doc-remove" title="Remove document" (click)="onDelete(doc.document_id)">×</button>
         </li>
       } @empty {
-        @if (!store.loadingDocs()) {
-          <li class="doc-empty">No documents yet. Add one to begin.</li>
-        }
+        @if (!store.loadingDocs()) { <li class="doc-empty">No documents yet. Add one to begin.</li> }
       }
     </ul>
   </aside>
 
-  <!-- ── Right: conversation ──────────────────────────────────────────── -->
   <main class="conversation">
+    @if (store.error(); as err) { <div class="banner banner--error" role="alert">{{ err }}</div> }
+    @if (store.notice(); as notice) { <div class="banner" role="status">{{ notice }}</div> }
 
-    @if (store.error(); as err) {
-      <div class="banner banner--error">{{ err }}</div>
-    }
-
-    <div class="thread">
+    <div class="thread" aria-live="polite">
       @for (turn of store.turns(); track turn.id) {
         <article class="turn">
-
-          <!-- Question -->
-          <div class="ask">
-            <span class="ask-label">You asked</span>
-            <p class="ask-text">{{ turn.question }}</p>
-          </div>
-
-          <!-- Answer -->
+          <div class="ask"><span class="ask-label">You asked</span><p class="ask-text">{{ turn.question }}</p></div>
           <div class="reply">
             @if (turn.pending) {
-              <div class="thinking">
-                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                <span class="thinking-label">Searching your documents…</span>
-              </div>
+              <div class="thinking"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="thinking-label">Searching your documents…</span></div>
             } @else if (turn.error) {
               <p class="reply-error">{{ turn.error }}</p>
             } @else {
               <p class="reply-text">{{ turn.answer }}</p>
-
               @if (turn.sources.length > 0) {
-                <button class="sources-toggle" (click)="toggleSources(turn.id)">
-                  {{ isExpanded(turn.id) ? 'Hide' : 'Show' }}
-                  {{ turn.sources.length }} source{{ turn.sources.length > 1 ? 's' : '' }}
-                </button>
-
+                <button class="sources-toggle" (click)="toggleSources(turn.id)">{{ isExpanded(turn.id) ? 'Hide' : 'Show' }} {{ turn.sources.length }} source{{ turn.sources.length > 1 ? 's' : '' }}</button>
                 @if (isExpanded(turn.id)) {
                   <div class="sources">
                     @for (src of turn.sources; track src.document_id + '-' + src.chunk_index) {
                       <figure class="source">
                         <figcaption class="source-head">
-                          <span class="source-file">{{ src.filename }}</span>
-                          <span class="source-score" [style.--score]="src.score">
-                            {{ scoreLabel(src.score) }} match
-                          </span>
+                          <span class="source-file">{{ src.filename }}@if (src.page_number) { · p. {{ src.page_number }} }</span>
+                          <span class="source-score" [style.--score]="src.score">{{ scoreLabel(src.score) }} match</span>
                         </figcaption>
                         <blockquote class="source-text">{{ src.text }}</blockquote>
                       </figure>
@@ -110,37 +67,13 @@
           </div>
         </article>
       } @empty {
-        <div class="welcome">
-          <p class="welcome-mark">"</p>
-          <h2 class="welcome-title">Your documents, answered.</h2>
-          <p class="welcome-text">
-            @if (store.hasDocuments()) {
-              Ask anything about the documents on the left. Answers come only
-              from what you uploaded — with the exact passages cited.
-            } @else {
-              Add a document to the shelf on the left, then ask it questions.
-            }
-          </p>
-        </div>
+        <div class="welcome"><p class="welcome-mark">"</p><h2 class="welcome-title">Your documents, answered.</h2><p class="welcome-text">@if (store.hasDocuments()) { Ask anything about the documents on the left. Answers come only from what you uploaded — with cited passages. } @else { Add a document to the shelf on the left, then ask it questions. }</p></div>
       }
     </div>
 
-    <!-- Composer -->
     <div class="composer">
-      <textarea
-        class="composer-input"
-        rows="1"
-        placeholder="{{ store.hasDocuments() ? 'Ask a question about your documents…' : 'Add a document first…' }}"
-        [disabled]="!store.hasDocuments()"
-        [ngModel]="draft()"
-        (ngModelChange)="draft.set($event)"
-        (keydown)="onKeydown($event)"></textarea>
-      <button
-        class="composer-send"
-        [disabled]="!store.hasDocuments() || !draft().trim()"
-        (click)="onAsk()">
-        Ask
-      </button>
+      <textarea class="composer-input" rows="1" placeholder="{{ store.hasDocuments() ? 'Ask a question about your documents…' : 'Add a document first…' }}" [disabled]="!store.hasDocuments() || store.asking()" [ngModel]="draft()" (ngModelChange)="draft.set($event)" (keydown)="onKeydown($event)"></textarea>
+      <button class="composer-send" [disabled]="!store.hasDocuments() || !draft().trim() || store.asking()" (click)="onAsk()">{{ store.asking() ? 'Thinking…' : 'Ask' }}</button>
     </div>
   </main>
 </div>
